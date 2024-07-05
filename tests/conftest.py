@@ -17,7 +17,6 @@ def client(session):
 
     with TestClient(app) as client:
         app.dependency_overrides[get_session] = get_session_override
-
         yield client
 
     app.dependency_overrides.clear()
@@ -31,6 +30,7 @@ def session():
         poolclass=StaticPool,
     )
     table_registry.metadata.create_all(engine)
+
     with Session(engine) as session:
         yield session
 
@@ -39,18 +39,16 @@ def session():
 
 @pytest.fixture()
 def user(session):
-    pwd = 'testtest'
-
     user = User(
         username='Teste',
         email='teste@test.com',
-        password=get_password_hash(pwd),
+        password=get_password_hash('testtest'),
     )
     session.add(user)
     session.commit()
     session.refresh(user)
 
-    user.clean_password = pwd
+    user.clean_password = 'testtest'
 
     return user
 
@@ -58,7 +56,7 @@ def user(session):
 @pytest.fixture()
 def token(client, user):
     response = client.post(
-        '/token',
+        '/auth/token',
         data={'username': user.email, 'password': user.clean_password},
     )
     return response.json()['access_token']
